@@ -14,7 +14,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing userInput" }, { status: 400 })
     }
 
-    const systemPrompt = (PROMPTS as Record<string, string>)[featureKey]
+    const FEATURE_ALIASES: Record<string, keyof typeof PROMPTS> = {
+      readingassistant: "aiReader",
+      reader: "aiReader",
+      readaloud: "aiReader",
+      "ai-reader": "aiReader",
+    }
+    const rawKey = String(featureKey).trim()
+    const lower = rawKey.toLowerCase()
+    const normalizedKey = (PROMPTS as Record<string, string>)[rawKey]
+      ? rawKey
+      : FEATURE_ALIASES[lower] && (PROMPTS as Record<string, string>)[FEATURE_ALIASES[lower]]
+        ? FEATURE_ALIASES[lower]
+        : rawKey
+
+    const systemPrompt = (PROMPTS as Record<string, string>)[normalizedKey]
     if (!systemPrompt) {
       return NextResponse.json({ error: "Invalid featureKey" }, { status: 400 })
     }
@@ -39,7 +53,7 @@ export async function POST(req: Request) {
         const groq = createGroq({ apiKey: GROQ_API_KEY })
 
         // Try Llama 4 Scout first (best for vision)
-        const visionModels = ["meta-llama/llama-4-scout-17b-16e-instruct", "llama-3.2-11b-vision-preview"]
+        const visionModels = ["llama-3.2-90b-vision-preview", "meta-llama/llama-4-scout-17b-16e-instruct"]
 
         let result
         let lastError

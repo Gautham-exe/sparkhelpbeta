@@ -18,7 +18,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing userInput", version: "v1" }, { status: 400 })
     }
 
-    const systemPrompt = (PROMPTS as Record<string, string>)[featureKey]
+    const FEATURE_ALIASES: Record<string, keyof typeof PROMPTS> = {
+      readingassistant: "aiReader",
+      reader: "aiReader",
+      readaloud: "aiReader",
+      "ai-reader": "aiReader",
+    }
+    const rawKey = String(featureKey).trim()
+    const lower = rawKey.toLowerCase()
+    const normalizedKey = (PROMPTS as Record<string, string>)[rawKey]
+      ? rawKey
+      : FEATURE_ALIASES[lower] && (PROMPTS as Record<string, string>)[FEATURE_ALIASES[lower]]
+        ? FEATURE_ALIASES[lower]
+        : rawKey
+
+    const systemPrompt = (PROMPTS as Record<string, string>)[normalizedKey]
     if (!systemPrompt) {
       return NextResponse.json({ error: "Invalid featureKey", version: "v1" }, { status: 400 })
     }

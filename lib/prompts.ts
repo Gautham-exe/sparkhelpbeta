@@ -145,7 +145,10 @@ Task: Translate accurately to the target language while:
 - Keeping cultural context appropriate
 - Using natural phrasing in the target language
 
-Return ONLY the translated text, no explanations or commentary.
+Return ONLY these three lines in this exact format (no extra text, no markdown):
+[NATIVE]: <translated text in the target language's native script>
+[LATIN]: <the same translation transliterated into Latin script; if the language already uses Latin script, repeat the same text>
+[LANG_CODE]: <BCP-47 code, e.g., hi-IN, kn-IN, es-ES, fr-FR>
 `,
 
   // 🔹 Advanced AI Features

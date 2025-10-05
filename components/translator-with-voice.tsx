@@ -60,9 +60,18 @@ export function TranslatorWithVoice() {
     try {
       const { output } = await runFeature({
         featureKey: "translator",
-        userInput: `Translate to ${targetLang}: ${input}`,
+        userInput: `Target language: ${targetLang}. Return [NATIVE], [LATIN], and [LANG_CODE] lines as specified.`,
       })
-      setOutput(output)
+
+      const nativeMatch = output.match(/\[NATIVE\]\s*:\s*([\s\S]*?)\s*(?:\n|$)/i)
+      const latinMatch = output.match(/\[LATIN\]\s*:\s*([\s\S]*?)\s*(?:\n|$)/i)
+      const langCodeMatch = output.match(/\[LANG_CODE\]\s*:\s*([A-Za-z-]+)/i)
+
+      const native = nativeMatch?.[1]?.trim() || output.trim()
+      const latin = latinMatch?.[1]?.trim() || native
+      const langCode = langCodeMatch?.[1]?.trim() || ""
+
+      setOutput(JSON.stringify({ native, latin, langCode }))
     } catch (error) {
       console.error("Translation error:", error)
       setOutput("Translation failed. Please try again.")
@@ -120,9 +129,27 @@ export function TranslatorWithVoice() {
             <Volume2 className="h-5 w-5" />
             Translation
           </h3>
-          <div className="prose prose-sm md:prose-base max-w-none dark:prose-invert">
-            <p className="whitespace-pre-wrap text-sm md:text-base leading-relaxed">{output}</p>
-          </div>
+          {(() => {
+            try {
+              const parsed = JSON.parse(output) as { native: string; latin: string; langCode?: string }
+              const showTranslit = parsed.latin && parsed.latin !== parsed.native
+              return (
+                <div className="space-y-2">
+                  <p className="whitespace-pre-wrap text-base md:text-lg leading-relaxed">{parsed.native}</p>
+                  {showTranslit ? (
+                    <p className="whitespace-pre-wrap text-sm md:text-base opacity-80 italic">{parsed.latin}</p>
+                  ) : null}
+                  {parsed.langCode ? <p className="text-xs opacity-70">{parsed.langCode}</p> : null}
+                </div>
+              )
+            } catch {
+              return (
+                <div className="prose prose-sm md:prose-base max-w-none dark:prose-invert">
+                  <p className="whitespace-pre-wrap text-sm md:text-base leading-relaxed">{output}</p>
+                </div>
+              )
+            }
+          })()}
         </Card>
       )}
     </div>

@@ -20,24 +20,29 @@ export async function POST(req: NextRequest) {
     if (!file.type.startsWith("image/")) return new Response("Only image files are supported", { status: 400 })
     if (file.size > 10 * 1024 * 1024) return new Response("Max file size is 10MB", { status: 400 })
 
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!supabaseUrl || !supabaseKey) {
+      return new Response(
+        "Supabase is not configured on the server. Please set SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL) and SUPABASE_SERVICE_ROLE_KEY.",
+        { status: 500 },
+      )
+    }
+
     const cookieStore = cookies()
-    const supabase = createServerClient(
-      process.env.SUPABASE_URL!, // server URL
-      process.env.SUPABASE_SERVICE_ROLE_KEY!, // secret key for server
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
-          },
-          set(name: string, value: string, options: any) {
-            cookieStore.set({ name, value, ...options })
-          },
-          remove(name: string, options: any) {
-            cookieStore.set({ name, value: "", ...options })
-          },
+    const supabase = createServerClient(supabaseUrl, supabaseKey, {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set(name: string, value: string, options: any) {
+          cookieStore.set({ name, value, ...options })
+        },
+        remove(name: string, options: any) {
+          cookieStore.set({ name, value: "", ...options })
         },
       },
-    )
+    })
 
     const BUCKET = "handwriting"
     const buckets = await supabase.storage.listBuckets()
@@ -110,8 +115,7 @@ export async function POST(req: NextRequest) {
         apiKey: GROQ_API_KEY,
       })
 
-      // Prefer stable, supported Groq vision models with a fallback chain
-      const visionModels = ["llama-3.2-11b-vision-preview", "llama-3.2-90b-vision-preview"]
+      const visionModels = ["llama-3.2-90b-vision-preview", "meta-llama/llama-4-scout-17b-16e-instruct"]
 
       let text = ""
       let lastError: any
@@ -120,26 +124,28 @@ export async function POST(req: NextRequest) {
         try {
           const result = await generateText({
             model: groq(model),
-            // AI SDK multimodal input format
-            input: [
+            messages: [
               {
-                type: "text",
-                text:
-                  "You are an OCR system. Extract ALL text from this image EXACTLY as written, character by character.\n\n" +
-                  "RULES:\n" +
-                  "- Copy the text EXACTLY as it appears\n" +
-                  "- Preserve ALL line breaks, spacing, and formatting\n" +
-                  "- Preserve ALL punctuation marks exactly\n" +
-                  "- Do NOT add any explanations, summaries, or commentary\n" +
-                  "- Do NOT interpret or rephrase anything\n" +
-                  "- Do NOT add introductory text like 'Here is the text:' or 'The image contains:'\n" +
-                  "- For mathematical formulas, use LaTeX notation\n" +
-                  "- For diagrams or drawings, describe them briefly in [brackets]\n\n" +
-                  "Output ONLY the extracted text, ready for copy-paste. Nothing else.",
-              },
-              {
-                type: "image",
-                image: publicUrl,
+                role: "user",
+                content: [
+                  {
+                    type: "text",
+                    text:
+                      "You are an OCR system. Extract ALL text from this image EXACTLY as written, character by character.\n\n" +
+                      "RULES:\n" +
+                      "- Copy the text EXACTLY as it appears\n" +
+                      "- Preserve ALL line breaks, spacing, and formatting\n" +
+                      "- Preserve ALL punctuation marks exactly\n" +
+                      "- Do NOT add any explanations, summaries, or commentary\n" +
+                      "- Do NOT interpret or rephrase anything\n" +
+                      "- Do NOT add introductory text like 'Here is the text:' or 'The image contains:'\n\n" +
+                      "Output ONLY the extracted text, ready for copy-paste. Nothing else.",
+                  },
+                  {
+                    type: "image",
+                    image: publicUrl,
+                  },
+                ],
               },
             ],
           })

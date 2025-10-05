@@ -46,7 +46,7 @@ export default function SiteNavbar() {
               Math
             </Link>
             {/* Discord-style CTA with hover motion */}
-            <Link href="/settings/env" className="btn-discord discord-glow gaming-button-hover hover-tilt">
+            <Link href="/status" className="btn-discord discord-glow gaming-button-hover hover-tilt">
               Status
             </Link>
           </div>

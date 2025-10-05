@@ -144,6 +144,17 @@ export default function Page() {
                   17 AI-powered tools to help you study smarter. From handwriting recognition to math solving, we've got
                   you covered.
                 </p>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <Link
+                    href="https://discord.gg/5AQH66Y4EB"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex"
+                    aria-label="Join Spark Help Discord server (opens in new tab)"
+                  >
+                    <Button className="bg-primary text-primary-foreground hover:opacity-90">Join our Discord</Button>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

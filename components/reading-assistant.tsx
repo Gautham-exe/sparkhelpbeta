@@ -35,25 +35,96 @@ export function ReadingAssistant() {
 
   const handleSpeak = () => {
     if (!translatedText) return
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return
 
-    const utterance = new SpeechSynthesisUtterance(translatedText)
-
-    // Set language based on selection
     const langCodes: Record<string, string> = {
       english: "en-US",
       hindi: "hi-IN",
       kannada: "kn-IN",
     }
-    utterance.lang = langCodes[targetLang] || "en-US"
-    utterance.rate = 0.9
-    utterance.pitch = 1
+    const targetCode = langCodes[targetLang] || "en-US"
 
-    utterance.onstart = () => setIsSpeaking(true)
-    utterance.onend = () => setIsSpeaking(false)
-    utterance.onerror = () => setIsSpeaking(false)
+    const getBestVoice = (voices: SpeechSynthesisVoice[], code: string) => {
+      // exact match first
+      let v = voices.find((voice) => voice.lang.toLowerCase() === code.toLowerCase())
+      if (v) return v
+      // startsWith match (e.g., "kn" to "kn-IN")
+      const base = code.split("-")[0].toLowerCase()
+      v = voices.find((voice) => voice.lang.toLowerCase().startsWith(base))
+      if (v) return v
+      // any voice that includes the base script
+      v = voices.find((voice) => voice.lang.toLowerCase().includes(base))
+      return v || voices[0]
+    }
 
-    window.speechSynthesis.cancel()
-    window.speechSynthesis.speak(utterance)
+    const speakChunk = (chunk: string, voice?: SpeechSynthesisVoice) => {
+      const u = new SpeechSynthesisUtterance(chunk)
+      u.lang = targetCode
+      u.rate = 0.9
+      u.pitch = 1
+      if (voice) u.voice = voice
+      u.onstart = () => setIsSpeaking(true)
+      u.onend = () => {
+        // no-op here; overall completion handled outside
+      }
+      u.onerror = () => {
+        // graceful failure per chunk
+      }
+      window.speechSynthesis.speak(u)
+    }
+
+    // split into manageable chunks to improve reliability
+    const makeChunks = (text: string, maxLen = 180) => {
+      const sentences = text
+        .replace(/\n+/g, " ")
+        .split(/(?<=[.!?।]|[\u0C80-\u0CFF]।)/) // also consider devanagari/indic separators loosely
+        .map((s) => s.trim())
+        .filter(Boolean)
+
+      const chunks: string[] = []
+      let current = ""
+      for (const s of sentences) {
+        if ((current + " " + s).trim().length > maxLen) {
+          if (current) chunks.push(current.trim())
+          current = s
+        } else {
+          current = current ? current + " " + s : s
+        }
+      }
+      if (current) chunks.push(current.trim())
+      return chunks.length ? chunks : [text]
+    }
+
+    // voices may not be loaded immediately; getVoices twice if needed
+    let voices = window.speechSynthesis.getVoices()
+    if (!voices || voices.length === 0) {
+      // Attempt to load, then proceed
+      window.speechSynthesis.onvoiceschanged = () => {
+        voices = window.speechSynthesis.getVoices()
+        const voice = getBestVoice(voices, targetCode)
+        const chunks = makeChunks(translatedText)
+        chunks.forEach((c, i) => speakChunk(c, voice))
+        // track final end by polling queue
+        const iv = setInterval(() => {
+          if (!window.speechSynthesis.speaking) {
+            clearInterval(iv)
+            setIsSpeaking(false)
+          }
+        }, 300)
+      }
+      // trigger voices load
+      window.speechSynthesis.getVoices()
+    } else {
+      const voice = getBestVoice(voices, targetCode)
+      const chunks = makeChunks(translatedText)
+      chunks.forEach((c) => speakChunk(c, voice))
+      const iv = setInterval(() => {
+        if (!window.speechSynthesis.speaking) {
+          clearInterval(iv)
+          setIsSpeaking(false)
+        }
+      }, 300)
+    }
   }
 
   const handleStop = () => {
