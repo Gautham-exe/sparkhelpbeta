@@ -1,0 +1,46 @@
+services:
+  - type: web
+    name: sparkhelp
+    env: node
+    plan: free
+    region: oregon
+    buildCommand: "npm install && npm run build"
+    startCommand: "npm run start"
+    envVars:
+      # Supabase - Frontend & Backend
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        value: "https://ehtyhfqaimblcmrvaqih.supabase.co"
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVodHloZnFhaW1ibGNtcnZhcWloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1ODQxNzcsImV4cCI6MjA3NTE2MDE3N30.Qu-er6dH-mK1FtmWDn0kknNVlCTrQ0ZVFPRRBnK70QA"
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVodHloZnFhaW1ibGNtcnZhcWloIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTU4NDE3NywiZXhwIjoyMDc1MTYwMTc3fQ.5rb0gB6NFKyl4HH3fgZ8QzIppf9fbaFRgp5Ld4nku7g"
+      - key: SUPABASE_JWT_SECRET
+        value: "OOb8zIMN3ZoOtJiX0RPP69ve1zsN+hlLPUsrM9t0pf/Gw/GD79fQYCNrxpzGjCPnW/V1N0zk0Bi3J63ls6XufQ=="
+
+      # OpenRouter
+      - key: OPENROUTER_API_KEY
+        value: "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"
+
+      # Google Generative AI / Gemini
+      - key: GOOGLE_GENERATIVE_AI_API_KEY
+        value: "AIzaSyDVzQknGPPUagx5wSm2Idm4KJQFqgUCmVU"
+      - key: GOOGLE_GEMINI_MODEL
+        value: "AIzaSyDV-JcK6RBizrfSWQsiXJOfhG_O0SfFAl0"
+
+      # Groq
+      - key: GROQ_API_KEY
+        value: "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"
+      - key: GROQ_MODEL
+        value: "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"
+
+      # Postgres (optional if used directly)
+      - key: POSTGRES_URL
+        value: "postgres://postgres.ehtyhfqaimblcmrvaqih:husC4u0aSxRNIU1l@aws-1-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require&supa=base-pooler.x"
+      - key: POSTGRES_USER
+        value: "postgres"
+      - key: POSTGRES_PASSWORD
+        value: "husC4u0aSxRNIU1l"
+      - key: POSTGRES_DATABASE
+        value: "postgres"
+      - key: POSTGRES_HOST
+        value: "db.ehtyhfqaimblcmrvaqih.supabase.co"
